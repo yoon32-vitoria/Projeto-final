@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clínica MedTec — Agenda de Consultas</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="topo">
+        <div class="container topo-conteudo">
+            <h1>Clínica MedTec</h1>
+            <nav class="menu">
+                <a href="{{ url_for('index') }}" class="ativo">Consultas</a>
+                <a href="{{ url_for('listar_pacientes') }}">Pacientes</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        {% with mensagens = get_flashed_messages(with_categories=true) %}
+            {% if mensagens %}
+                {% for categoria, texto in mensagens %}
+                    <div class="alerta alerta-{{ categoria }}">{{ texto }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <section class="card">
+            <h2>{% if consulta_edicao %}Editar Consulta{% else %}Agendar Nova Consulta{% endif %}</h2>
+
+            {% if not pacientes %}
+                <p class="aviso">
+                    Nenhum paciente cadastrado ainda.
+                    <a href="{{ url_for('listar_pacientes') }}">Cadastre um paciente primeiro</a>.
+                </p>
+            {% else %}
+                <form action="{{ url_for('salvar_consulta') }}" method="POST" class="formulario">
+                    {% if consulta_edicao %}
+                        <input type="hidden" name="id" value="{{ consulta_edicao.id }}">
+                    {% endif %}
+
+                    <div class="campo">
+                        <label for="paciente_id">Paciente</label>
+                        <select id="paciente_id" name="paciente_id" required>
+                            <option value="">Selecione um paciente...</option>
+                            {% for p in pacientes %}
+                                <option value="{{ p.id }}" {% if consulta_edicao and consulta_edicao.paciente_id == p.id %}selected{% endif %}>
+                                    {{ p.nome }} ({{ p.telefone }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="campo">
+                        <label for="data">Dia da Consulta</label>
+                        <input type="date" id="data" name="data" value="{{ consulta_edicao.data if consulta_edicao else '' }}" required>
+                    </div>
+
+                    <div class="campo">
+                        <label for="hora">Hora</label>
+                        <input type="time" id="hora" name="hora" value="{{ consulta_edicao.hora if consulta_edicao else '' }}" required>
+                    </div>
+
+                    <div class="campo">
+                        <label for="motivo">Motivo / Observação</label>
+                        <input type="text" id="motivo" name="motivo" placeholder="Ex.: Consulta de rotina" value="{{ consulta_edicao.motivo if consulta_edicao and consulta_edicao.motivo else '' }}">
+                    </div>
+
+                    <div class="acoes-form">
+                        <button type="submit" class="btn btn-primario">
+                            {% if consulta_edicao %}Salvar Alterações{% else %}Agendar Consulta{% endif %}
+                        </button>
+                        {% if consulta_edicao %}
+                            <a href="{{ url_for('index') }}" class="btn btn-secundario">Cancelar</a>
+                        {% endif %}
+                    </div>
+                </form>
+            {% endif %}
+        </section>
+
+        <section class="card">
+            <div class="cabecalho-lista">
+                <h2>Pacientes Agendados (por Dia e Hora)</h2>
+                <form action="{{ url_for('index') }}" method="GET" class="filtro">
+                    <input type="text" name="busca" placeholder="Buscar por paciente ou motivo..." value="{{ busca }}">
+                    <input type="date" name="data" value="{{ data_filtro }}">
+                    <button type="submit" class="btn btn-secundario">Filtrar</button>
+                    {% if busca or data_filtro %}
+                        <a href="{{ url_for('index') }}" class="btn btn-limpar">Limpar</a>
+                    {% endif %}
+                </form>
+            </div>
+
+            {% if consultas %}
+                <div class="tabela-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Dia</th>
+                                <th>Hora</th>
+                                <th>Paciente</th>
+                                <th>Telefone</th>
+                                <th>Motivo</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in consultas %}
+                                <tr>
+                                    <td>{{ c.data_br }}</td>
+                                    <td><strong>{{ c.hora }}</strong></td>
+                                    <td>{{ c.paciente_nome }}</td>
+                                    <td>{{ c.paciente_telefone }}</td>
+                                    <td>{{ c.motivo or '-' }}</td>
+                                    <td class="acoes-tabela">
+                                        <a href="{{ url_for('index', editar=c.id) }}" class="btn-link">Editar</a>
+                                        <form action="{{ url_for('excluir_consulta', id=c.id) }}" method="POST" onsubmit="return confirm('Deseja excluir esta consulta?');">
+                                            <button type="submit" class="btn-link btn-perigo">Excluir</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="vazio">Nenhuma consulta encontrada.</p>
+            {% endif %}
+        </section>
+    </main>
+
+    <footer class="rodape">
+        <div class="container">
+            <p>Sistema de Agendamentos MedTec 2026 · API JSON: <a href="{{ url_for('api_consultas') }}">/api/consultas</a> | <a href="{{ url_for('api_pacientes') }}">/api/pacientes</a></p>
+        </div>
+    </footer>
+</body>
+</html>

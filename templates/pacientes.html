@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clínica MedTec — Pacientes</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="topo">
+        <div class="container topo-conteudo">
+            <h1>Clínica MedTec</h1>
+            <nav class="menu">
+                <a href="{{ url_for('index') }}">Consultas</a>
+                <a href="{{ url_for('listar_pacientes') }}" class="ativo">Pacientes</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        {% with mensagens = get_flashed_messages(with_categories=true) %}
+            {% if mensagens %}
+                {% for categoria, texto in mensagens %}
+                    <div class="alerta alerta-{{ categoria }}">{{ texto }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <section class="card">
+            <h2>{% if paciente_edicao %}Editar Paciente{% else %}Cadastrar Novo Paciente{% endif %}</h2>
+
+            <form action="{{ url_for('salvar_paciente') }}" method="POST" class="formulario">
+                {% if paciente_edicao %}
+                    <input type="hidden" name="id" value="{{ paciente_edicao.id }}">
+                {% endif %}
+
+                <div class="campo">
+                    <label for="nome">Nome Completo</label>
+                    <input type="text" id="nome" name="nome" placeholder="Ex.: Maria Souza" value="{{ paciente_edicao.nome if paciente_edicao else '' }}" required>
+                </div>
+
+                <div class="campo">
+                    <label for="telefone">Telefone</label>
+                    <input type="text" id="telefone" name="telefone" placeholder="(11) 99999-9999" value="{{ paciente_edicao.telefone if paciente_edicao else '' }}" required>
+                </div>
+
+                <div class="campo">
+                    <label for="data_nascimento">Data de Nascimento</label>
+                    <input type="date" id="data_nascimento" name="data_nascimento" value="{{ paciente_edicao.data_nascimento if paciente_edicao and paciente_edicao.data_nascimento else '' }}">
+                </div>
+
+                <div class="acoes-form">
+                    <button type="submit" class="btn btn-primario">
+                        {% if paciente_edicao %}Salvar Alterações{% else %}Cadastrar Paciente{% endif %}
+                    </button>
+                    {% if paciente_edicao %}
+                        <a href="{{ url_for('listar_pacientes') }}" class="btn btn-secundario">Cancelar</a>
+                    {% endif %}
+                </div>
+            </form>
+        </section>
+
+        <section class="card">
+            <h2>Pacientes Cadastrados</h2>
+
+            {% if pacientes %}
+                <div class="tabela-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Telefone</th>
+                                <th>Nascimento</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in pacientes %}
+                                <tr>
+                                    <td>{{ p.id }}</td>
+                                    <td><strong>{{ p.nome }}</strong></td>
+                                    <td>{{ p.telefone }}</td>
+                                    <td>{{ p.data_nascimento_br or '-' }}</td>
+                                    <td class="acoes-tabela">
+                                        <a href="{{ url_for('listar_pacientes', editar=p.id) }}" class="btn-link">Editar</a>
+                                        <form action="{{ url_for('excluir_paciente', id=p.id) }}" method="POST" onsubmit="return confirm('Excluir este paciente também removerá suas consultas. Continuar?');">
+                                            <button type="submit" class="btn-link btn-perigo">Excluir</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="vazio">Nenhum paciente cadastrado ainda.</p>
+            {% endif %}
+        </section>
+    </main>
+
+    <footer class="rodape">
+        <div class="container">
+            <p>Sistema de Agendamentos MedTec 2026 · API JSON: <a href="{{ url_for('api_consultas') }}">/api/consultas</a> | <a href="{{ url_for('api_pacientes') }}">/api/pacientes</a></p>
+        </div>
+    </footer>
+</body>
+</html>
